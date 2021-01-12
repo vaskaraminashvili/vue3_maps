@@ -1,7 +1,13 @@
 <template>
   <div class="ui segment max-height">
     <div class="ui divder items">
-      <div class="item" v-for="place in places" :key="place.id">
+      <div
+        class="item"
+        :class="{ active: activeIndex === index }"
+        v-for="(place, index) in places"
+        :key="place.id"
+        @click="showInfoWindow(index)"
+      >
         <div class="content">
           <div class="header">{{ place.name }}</div>
           <div class="meta">{{ place.vicinity }}</div>
@@ -13,7 +19,19 @@
 
 <script>
 export default {
-  props: ["places"],
+  props: ["places", "markers"],
+  data() {
+    return {
+      activeIndex: -1,
+    };
+  },
+  methods: {
+    showInfoWindow(index) {
+      const marker = this.markers[index];
+      this.activeIndex = index;
+      new window.google.maps.event.trigger(marker, "click");
+    },
+  },
 };
 </script>
 
@@ -21,5 +39,11 @@ export default {
 .max-height {
   max-height: 300px;
   overflow-y: auto;
+}
+.item {
+  padding: 10px !important;
+}
+.active {
+  background-color: tomato !important;
 }
 </style>

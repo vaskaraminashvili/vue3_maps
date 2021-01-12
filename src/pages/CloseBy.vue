@@ -39,7 +39,11 @@
           </button>
         </div>
       </form>
-      <near-by-places :places="places" v-if="places.length"></near-by-places>
+      <near-by-places
+        :places="places"
+        :markers="markers"
+        v-if="places.length"
+      ></near-by-places>
     </div>
     <div class="ten wide column ">
       <section id="map" ref="map"></section>
@@ -48,7 +52,7 @@
 </template>
 
 <script>
-// https://maps.googleapis.com/maps/api/geocode/json?latlng
+// http://localhost:8010/proxy/maps/api/geocode/json?latlng
 import axios from "axios";
 import NearByPlaces from "../components/NearByPlaces.vue";
 export default {
@@ -64,6 +68,7 @@ export default {
       type: "",
       radius: "",
       places: [],
+      markers: [],
     };
   },
   mounted() {
@@ -71,7 +76,7 @@ export default {
   },
   methods: {
     findCloseBuyButton() {
-      const URL = `https://cors-anywhere.herokuapp.com/https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
+      const URL = `http://localhost:8010/proxy/maps/api/place/nearbysearch/json?location=${
         this.lat
       },${this.lng}&type=${this.type}&radius=${this.radius * 1000}&key=${
         this.apiKey
@@ -93,14 +98,47 @@ export default {
         center: new window.google.maps.LatLng(this.lat, this.lng),
       };
       const map = new window.google.maps.Map(mapContainer, options);
+      const infoWindow = new window.google.maps.InfoWindow();
+
       for (let i = 0; i < this.places.length; i++) {
         const lat = this.places[i].geometry.location.lat;
         const lng = this.places[i].geometry.location.lng;
+        const place_id = this.places[i].place_id;
         const markerOptions = {
           position: new window.google.maps.LatLng(lat, lng),
           map: map,
         };
-        new window.google.maps.Marker(markerOptions);
+
+        // makrer
+        const marker = new window.google.maps.Marker(markerOptions);
+        this.markers.push(marker);
+        new window.google.maps.event.addListener(marker, "click", () => {
+          const URL = `http://localhost:8010/proxy/maps/api/place/details/json?key=${this.apiKey}&place_id=${place_id}`;
+          axios
+            .get(URL)
+            .then((result) => {
+              console.log(result.data.result);
+              if (result.data.error_message) {
+                this.error = result.data.error_message;
+              } else {
+                const place = result.data.result;
+                infoWindow.setContent(
+                  `<div class="ui header">${place.name}</div>
+            ${place.formatted_address} </>
+            ${place.formatted_phone_number} </br>
+            <a href="${place.website}" traget="_blank">${place.website}</a>
+
+            `
+                );
+              }
+            })
+            .catch((err) => {
+              this.error = err.message;
+            });
+
+          infoWindow.open(map, marker);
+          console.log("wordl");
+        });
       }
     },
     initLocationSearch() {
@@ -171,7 +209,7 @@ export default {
     getAddresFrom(lat, long) {
       axios
         .get(
-          "https://maps.googleapis.com/maps/api/geocode/json?latlng=" +
+          "http://localhost:8010/proxy/maps/api/geocode/json?latlng=" +
             lat +
             "," +
             long +
