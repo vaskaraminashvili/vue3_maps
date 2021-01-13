@@ -1,6 +1,9 @@
 <template>
   <section class="origin-destination-form">
     <div class="ui form">
+      <div class="ui message red small" v-show="error">
+        {{ error }}
+      </div>
       <div class="two fields">
         <div class="field">
           <div class="ui left icon input">
@@ -19,7 +22,11 @@
             />
           </div>
         </div>
-        <button class="ui button small green" @click="calculateButtonPressed">
+        <button
+          class="ui button small green"
+          :class="{ loading: spinner }"
+          @click="calculateButtonPressed"
+        >
           Calculate
         </button>
       </div>
@@ -29,6 +36,7 @@
 
 <script>
 import axios from "axios";
+import firebase from "firebase";
 export default {
   mounted() {
     for (let ref in this.$refs) {
@@ -42,7 +50,9 @@ export default {
   data() {
     return {
       apiKey: "AIzaSyBX-LZa9b_mCzcSNROg2yPsi70-ibRNFHU",
-      route: {
+      error: null,
+      spinner: false,
+      mapRoute: {
         origin: {
           address: "",
           lat: 0,
@@ -53,6 +63,7 @@ export default {
           lat: 0,
           lng: 0,
         },
+        distance: {},
       },
     };
   },
@@ -80,24 +91,44 @@ export default {
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
 
-          this.route[ref].address = `${place.name} , ${place.vicinity}`;
-          this.route[ref].address = lat;
-          this.route[ref].address = lng;
+          this.mapRoute[ref].address = `${place.name} , ${place.vicinity}`;
+          this.mapRoute[ref].lat = lat;
+          this.mapRoute[ref].lng = lng;
 
           // this.showUserLocationOnTheMap(lat, lng);
         }
       });
     },
     calculateButtonPressed() {
-      const URL = `http://localhost:8010/proxy/maps/api/distancematrix/json?origins=${this.route.origin.lat},${this.route.origin.lng}&destinations=${this.route.destination.lat},${this.route.destination.lng}&key=${this.apiKey}`;
+      this.spinner = true;
+      const URL = `http://localhost:8010/proxy/maps/api/distancematrix/json?origins=${this.mapRoute.origin.lat},${this.mapRoute.origin.lng}&destinations=${this.mapRoute.destination.lat},${this.mapRoute.destination.lng}&key=${this.apiKey}`;
       axios
         .get(URL)
         .then((result) => {
-          console.log(result);
+          if (result.data.error_message) {
+            this.error = result.data.error_message;
+          } else {
+            const elements = result.data.rows[0].elements;
+            if (elements[0].status === "ZERO_RESULTS") {
+              this.error = "No results Found";
+            } else {
+              this.mapRoute.distance = elements[0].distance;
+              this.mapRoute.duration = elements[0].duration;
+              this.saveRoute();
+            }
+            this.spinner = false;
+          }
         })
         .catch((err) => {
-          console.log(err.message);
+          this.error = err.message;
+          this.spinner = false;
         });
+    },
+    saveRoute() {
+      const db = firebase.firestore();
+      db.collection("routes")
+        .doc()
+        .set(this.mapRoute);
     },
   },
 };
