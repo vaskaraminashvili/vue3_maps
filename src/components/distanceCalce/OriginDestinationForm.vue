@@ -1,0 +1,114 @@
+<template>
+  <section class="origin-destination-form">
+    <div class="ui form">
+      <div class="two fields">
+        <div class="field">
+          <div class="ui left icon input">
+            <i class="marker  alternate icon"></i>
+            <input type="text" name="" placeholder="Origin" ref="origin" />
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui left icon input">
+            <i class="flag checkered icon"></i>
+            <input
+              type="text"
+              name=""
+              placeholder="Destination"
+              ref="destination"
+            />
+          </div>
+        </div>
+        <button class="ui button small green" @click="calculateButtonPressed">
+          Calculate
+        </button>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script>
+import axios from "axios";
+export default {
+  mounted() {
+    for (let ref in this.$refs) {
+      this.initLocationSearch(ref);
+    }
+
+    // window.checkAndAttachMapScript(this.initLocationSearch);
+    // new window.google.maps.places.AutoComplete(input, options);
+    // const originAutoComplete = new window.google.maps.places.AutoComplete()
+  },
+  data() {
+    return {
+      apiKey: "AIzaSyBX-LZa9b_mCzcSNROg2yPsi70-ibRNFHU",
+      route: {
+        origin: {
+          address: "",
+          lat: 0,
+          lng: 0,
+        },
+        destination: {
+          address: "",
+          lat: 0,
+          lng: 0,
+        },
+      },
+    };
+  },
+  methods: {
+    initLocationSearch(ref) {
+      // Constructs a rectangle from the points at its south-west and north-east corners.
+      var defaultBounds = new window.google.maps.LatLngBounds(
+        new window.google.maps.LatLng(41.606778, 44.6156),
+        new window.google.maps.LatLng(41.850844, 44.902216)
+      );
+
+      const input = this.$refs[ref];
+      const options = {
+        bounds: defaultBounds,
+        // types: ["roadmap"],
+        strictBounds: true,
+      };
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        input,
+        options
+      );
+      autocomplete.addListener("place_changed", () => {
+        let place = autocomplete.getPlace();
+        if (place && place.address_components) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+
+          this.route[ref].address = `${place.name} , ${place.vicinity}`;
+          this.route[ref].address = lat;
+          this.route[ref].address = lng;
+
+          // this.showUserLocationOnTheMap(lat, lng);
+        }
+      });
+    },
+    calculateButtonPressed() {
+      const URL = `http://localhost:8010/proxy/maps/api/distancematrix/json?origins=${this.route.origin.lat},${this.route.origin.lng}&destinations=${this.route.destination.lat},${this.route.destination.lng}&key=${this.apiKey}`;
+      axios
+        .get(URL)
+        .then((result) => {
+          console.log(result);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+    },
+  },
+};
+</script>
+
+<style scoped>
+.origin-destination-form {
+  position: relative;
+  z-index: 1;
+  max-width: 610px;
+  margin: 10px;
+  /* background-color: #fff; */
+}
+</style>
