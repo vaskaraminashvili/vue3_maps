@@ -15,43 +15,126 @@ export default {
     // this.mapRoute = this.$store.getters["destCalc/gRoutes"];
   },
   mounted() {
-    const box = this.$refs.mapContainer;
-    const options = {
-      center: new window.google.maps.LatLng(
-        41.72645253832406,
-        44.75086220285816
-      ),
-      zoom: 15,
-      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-    };
-    const map = new window.google.maps.Map(box, options);
     const directionService = new window.google.maps.DirectionsService();
-    const directionsRenderer = new window.google.maps.DirectionsRenderer();
-    window.mitt.on("route-data", (data) => {
-      directionService.route(
-        {
-          origin: data.route.origin.address,
-          destination: data.route.destination.address,
-          travelMode: "DRIVING",
-        },
-        (response, status) => {
-          if (status === "OK") {
-            directionsRenderer.setDirections(response);
-            directionsRenderer.setMap(map);
+    // const directionsRenderer = new window.google.maps.DirectionsRenderer();
+    // window.mitt.on("route-data", (data) => {
+    //   console.log(data.route);
+    //   // const waypts = [];
+    //   // waypts.push({
+    //   //   location: "Connawarra,SA",
+    //   //   stopover: true,
+    //   // });
+    //   directionService.route(
+    //     {
+    //       origin: data.route.origin.address,
+    //       destination: data.route.destination.address,
+    //       travelMode: "DRIVING",
+
+    //       // using way point stops
+    //       // origin: "Adelaide,SA",
+    //       // destination: "Clare,SA",
+    //       // waypoints: waypts,
+    //       // optimizeWaypoints: true,
+    //       // travelMode: "DRIVING",
+    //     },
+    //     (response, status) => {
+    //       if (status === "OK") {
+    //         directionsRenderer.setDirections(response);
+    //         directionsRenderer.setMap(map);
+    //       }
+    //       console.log(response, status);
+    //     }
+    //   );
+    // });
+
+    window.mitt.on("routes-all", (routes) => {
+      const options = {
+        center: new window.google.maps.LatLng(
+          41.72645253832406,
+          44.75086220285816
+        ),
+        zoom: 15,
+        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      };
+      const map = new window.google.maps.Map(this.$refs.mapContainer, options);
+      routes.forEach(({ origin, destination, distance, duration }) => {
+        directionService.route(
+          {
+            origin: origin.address,
+            destination: destination.address,
+            travelMode: "DRIVING",
+          },
+          (response, status) => {
+            if (status === "OK") {
+              new window.google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                directions: response,
+                map,
+                // draggable: true,
+              });
+              // amis shetana shesadzlebeli pirdapir constructorshi
+              // directionsRenderer.setDirections(response);
+              // directionsRenderer.setMap(map);
+
+              // create popup window for starting point and ending
+              this.createInfoWindowWith(origin, "marker alternate", map);
+              this.createInfoWindowWith(destination, "flag checkered", map);
+
+              const overviewPath = response.routes[0].overview_path;
+              const middleIndex = parseInt(overviewPath.length / 2);
+              const middleLoc = overviewPath[middleIndex];
+
+              // create popup window in the middle with distance end time text
+              const distanceDuration = new window.google.maps.InfoWindow({
+                content: `<i class="icon car"> </i> ${distance.text} - ${duration.text}`,
+                position: new window.google.maps.LatLng(
+                  middleLoc.lat(),
+                  middleLoc.lng()
+                ),
+              });
+              distanceDuration.open(map, null);
+
+              // connect line from addres to path
+              // new window.google.maps.Polyline({
+              //   path: [
+              //     {
+              //       lat: origin.tal,
+              //       lng: origin.lng,
+              //     },
+              //     {
+              //       lat: overviewPath[0].lat(),
+              //       lng: overviewPath[0].lng(),
+              //     },
+              //   ],
+              //   storkeColor: "#000",
+              //   storeOpacity: 1,
+              //   storeWeight: 8,
+              //   map,
+              // });
+            }
           }
-          console.log(response, status);
-        }
-      );
+        );
+      });
     });
     // if (this.mapRoute != null) {
     //   console.log(this.mapRoute);
     //
     // }
   },
+  methods: {
+    createInfoWindowWith(location, icon, map) {
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<i class="${icon} icon"> </i> ${location.address}`,
+        position: new window.google.maps.LatLng(location.lat, location.lng),
+      });
+      infoWindow.open(map, null);
+    },
+    // createPolyLine(start, end, map) {},
+  },
 };
 </script>
 
-<style scoped>
+<style>
 .map {
   position: absolute;
   top: 0;
@@ -59,5 +142,14 @@ export default {
   left: 0;
   bottom: 0;
   background-color: tomato;
+}
+.gm-style-iw .gm-ui-hover-effect {
+  display: none !important;
+}
+.gm-style .gm-style-iw-c {
+  padding: 5px !important;
+}
+.gm-style-iw-d {
+  overflow: hidden !important;
 }
 </style>

@@ -15,6 +15,9 @@
           <option value="duration-desc">Slow</option>
         </optgroup>
       </select>
+      <button class="ui button show-all" @click="showAllRoutesButtonPressed">
+        show All
+      </button>
     </div>
     <div
       class="item"
@@ -92,7 +95,10 @@ export default {
         });
     },
     routeItemPressed(route) {
-      window.mitt.emit("route-data", { route: route });
+      window.mitt.emit("routes-all", [route]);
+    },
+    showAllRoutesButtonPressed() {
+      window.mitt.emit("routes-all", this.routesList);
     },
   },
 };
@@ -115,5 +121,9 @@ export default {
 }
 .item:hover {
   background-color: rgba(0, 0, 0, 0.1);
+}
+.show-all {
+  margin-left: 50px;
+  padding: 4px 10px;
 }
 </style>
