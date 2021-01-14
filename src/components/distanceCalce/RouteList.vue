@@ -42,6 +42,8 @@
 
 <script>
 import firebase from "firebase";
+import mitt from "mitt";
+window.mitt = window.mitt || new mitt();
 export default {
   data() {
     return {
@@ -58,10 +60,6 @@ export default {
         let route = doc.data();
         route.id = doc.id;
         this.routesList.push(route);
-        this.lastRoute = route;
-      });
-      this.$store.dispatch("destCalc/addRouteToList", {
-        value: this.lastRoute,
       });
     });
   },
@@ -94,9 +92,7 @@ export default {
         });
     },
     routeItemPressed(route) {
-      this.$store.dispatch("destCalc/addRouteToList", {
-        value: route,
-      });
+      window.mitt.emit("route-data", { route: route });
     },
   },
 };

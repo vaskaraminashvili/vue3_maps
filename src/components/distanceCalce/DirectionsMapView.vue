@@ -3,6 +3,8 @@
 </template>
 
 <script>
+import mitt from "mitt";
+window.mitt = window.mitt || new mitt();
 export default {
   data() {
     return {
@@ -13,7 +15,6 @@ export default {
     // this.mapRoute = this.$store.getters["destCalc/gRoutes"];
   },
   mounted() {
-    console.log("mounted");
     const box = this.$refs.mapContainer;
     const options = {
       center: new window.google.maps.LatLng(
@@ -23,21 +24,29 @@ export default {
       zoom: 15,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP,
     };
-    new window.google.maps.Map(box, options);
+    const map = new window.google.maps.Map(box, options);
     const directionService = new window.google.maps.DirectionsService();
-    if (this.mapRoute != null) {
-      console.log(this.mapRoute);
+    const directionsRenderer = new window.google.maps.DirectionsRenderer();
+    window.mitt.on("route-data", (data) => {
       directionService.route(
         {
-          origin: this.mapRoute.origin.address,
-          destination: this.mapRoute.destination.address,
+          origin: data.route.origin.address,
+          destination: data.route.destination.address,
           travelMode: "DRIVING",
         },
         (response, status) => {
+          if (status === "OK") {
+            directionsRenderer.setDirections(response);
+            directionsRenderer.setMap(map);
+          }
           console.log(response, status);
         }
       );
-    }
+    });
+    // if (this.mapRoute != null) {
+    //   console.log(this.mapRoute);
+    //
+    // }
   },
 };
 </script>
