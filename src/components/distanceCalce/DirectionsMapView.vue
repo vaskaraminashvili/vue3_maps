@@ -9,6 +9,9 @@ export default {
   data() {
     return {
       mapRoute: null,
+      distance: "",
+      duration: "",
+      gMap: "",
     };
   },
   created() {
@@ -57,6 +60,7 @@ export default {
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
       };
       const map = new window.google.maps.Map(this.$refs.mapContainer, options);
+      this.gMap = map;
       routes.forEach(({ origin, destination, distance, duration }) => {
         directionService.route(
           {
@@ -66,12 +70,22 @@ export default {
           },
           (response, status) => {
             if (status === "OK") {
-              new window.google.maps.DirectionsRenderer({
-                suppressMarkers: true,
+              this.distance = distance;
+              this.duration = duration;
+              const direction_mark = new window.google.maps.DirectionsRenderer({
+                // suppressMarkers: true,
                 directions: response,
                 map,
-                // draggable: true,
+                draggable: true,
               });
+              window.google.maps.event.addListener(
+                direction_mark,
+                "directions_changed",
+                () => {
+                  this.computeTotalDistance(direction_mark.getDirections());
+                }
+              );
+
               // amis shetana shesadzlebeli pirdapir constructorshi
               // directionsRenderer.setDirections(response);
               // directionsRenderer.setMap(map);
@@ -86,7 +100,7 @@ export default {
 
               // create popup window in the middle with distance end time text
               const distanceDuration = new window.google.maps.InfoWindow({
-                content: `<i class="icon car"> </i> ${distance.text} - ${duration.text}`,
+                content: `<i class="icon car"> </i> ${this.distance.text} - ${this.duration.text}`,
                 position: new window.google.maps.LatLng(
                   middleLoc.lat(),
                   middleLoc.lng()
@@ -116,6 +130,7 @@ export default {
         );
       });
     });
+
     // if (this.mapRoute != null) {
     //   console.log(this.mapRoute);
     //
@@ -128,6 +143,28 @@ export default {
         position: new window.google.maps.LatLng(location.lat, location.lng),
       });
       infoWindow.open(map, null);
+    },
+    computeTotalDistance(result) {
+      let total = 0;
+      const myroute = result.routes[0];
+      const overviewPath = myroute.overview_path;
+      const middleIndex = parseInt(overviewPath.length / 2);
+      const middleLoc = overviewPath[middleIndex];
+
+      for (let i = 0; i < myroute.legs.length; i++) {
+        total += myroute.legs[i].distance.value;
+      }
+      total = total / 1000;
+      this.distance = total + " km";
+      // create popup window wiht update info
+      const distanceDuration = new window.google.maps.InfoWindow({
+        content: `<i class="icon car"> </i> ${myroute.legs[0].distance.text} - ${myroute.legs[0].duration.text}`,
+        position: new window.google.maps.LatLng(
+          middleLoc.lat(),
+          middleLoc.lng()
+        ),
+      });
+      distanceDuration.open(this.gMap, null);
     },
     // createPolyLine(start, end, map) {},
   },
