@@ -101,7 +101,7 @@ export default {
     },
     calculateButtonPressed() {
       this.spinner = true;
-      const URL = `http://localhost:8010/proxy/maps/api/distancematrix/json?origins=${this.mapRoute.origin.lat},${this.mapRoute.origin.lng}&destinations=${this.mapRoute.destination.lat},${this.mapRoute.destination.lng}&key=${this.apiKey}`;
+      const URL = `https://cors-anywhere.herokuapp.com/https://maps.googleapis.com/maps/api/distancematrix/json?origins=${this.mapRoute.origin.lat},${this.mapRoute.origin.lng}&destinations=${this.mapRoute.destination.lat},${this.mapRoute.destination.lng}&key=${this.apiKey}`;
       axios
         .get(URL)
         .then((result) => {
